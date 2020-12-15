@@ -19,7 +19,7 @@ import (
 	_ "github.com/heroku/x/hmetrics/onload"
 )
 
-const version = "v0.5.1"
+const version = "v0.5.3"
 
 var router *gin.Engine
 
@@ -30,7 +30,7 @@ func setupRouter() {
 	router.Use(gin.Recovery(), cache.SiteCache(store, time.Minute)) // 加上处理panic的中间件，防止遇到panic退出程序
 
 	_ = binhtml.RestoreAssets("", "assets/html") // 恢复静态文件（不恢复问题也不大就是难修改）
-	_ = binhtml.RestoreAssets("", "assets/css")
+	_ = binhtml.RestoreAssets("", "assets/static")
 
 	temp, err := loadHTMLTemplate() // 加载html模板，模板源存放于html.go中的类似_assetsHtmlSurgeHtml的变量
 	if err != nil {
@@ -38,7 +38,7 @@ func setupRouter() {
 	}
 	router.SetHTMLTemplate(temp) // 应用模板
 
-	router.StaticFile("/css/index.css", "assets/css/index.css")
+	router.StaticFile("/static/index.js", "assets/static/index.js")
 
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "assets/html/index.html", gin.H{
@@ -65,6 +65,12 @@ func setupRouter() {
 
 	router.GET("/surge", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "assets/html/surge.html", gin.H{
+			"domain": config.Config.Domain,
+		})
+	})
+
+	router.GET("/shadowrocket", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "assets/html/shadowrocket.html", gin.H{
 			"domain": config.Config.Domain,
 		})
 	})
@@ -142,7 +148,7 @@ func setupRouter() {
 			if text == "" {
 				proxies := appcache.GetProxies("proxies")
 				surge := provider.Surge{
-					provider.Base{
+					Base: provider.Base{
 						Proxies: &proxies,
 					},
 				}
@@ -152,7 +158,7 @@ func setupRouter() {
 		} else if proxyTypes == "all" {
 			proxies := appcache.GetProxies("allproxies")
 			surge := provider.Surge{
-				provider.Base{
+				Base: provider.Base{
 					Proxies:    &proxies,
 					Types:      proxyTypes,
 					Country:    proxyCountry,
@@ -164,7 +170,7 @@ func setupRouter() {
 		} else {
 			proxies := appcache.GetProxies("proxies")
 			surge := provider.Surge{
-				provider.Base{
+				Base: provider.Base{
 					Proxies:    &proxies,
 					Types:      proxyTypes,
 					Country:    proxyCountry,
@@ -179,7 +185,7 @@ func setupRouter() {
 	router.GET("/ss/sub", func(c *gin.Context) {
 		proxies := appcache.GetProxies("proxies")
 		ssSub := provider.SSSub{
-			provider.Base{
+			Base: provider.Base{
 				Proxies: &proxies,
 				Types:   "ss",
 			},
@@ -189,7 +195,7 @@ func setupRouter() {
 	router.GET("/ssr/sub", func(c *gin.Context) {
 		proxies := appcache.GetProxies("proxies")
 		ssrSub := provider.SSRSub{
-			provider.Base{
+			Base: provider.Base{
 				Proxies: &proxies,
 				Types:   "ssr",
 			},
@@ -199,7 +205,7 @@ func setupRouter() {
 	router.GET("/vmess/sub", func(c *gin.Context) {
 		proxies := appcache.GetProxies("proxies")
 		vmessSub := provider.VmessSub{
-			provider.Base{
+			Base: provider.Base{
 				Proxies: &proxies,
 				Types:   "vmess",
 			},
@@ -209,12 +215,22 @@ func setupRouter() {
 	router.GET("/sip002/sub", func(c *gin.Context) {
 		proxies := appcache.GetProxies("proxies")
 		sip002Sub := provider.SIP002Sub{
-			provider.Base{
+			Base: provider.Base{
 				Proxies: &proxies,
 				Types:   "ss",
 			},
 		}
 		c.String(200, sip002Sub.Provide())
+	})
+	router.GET("/trojan/sub", func(c *gin.Context) {
+		proxies := appcache.GetProxies("proxies")
+		trojanSub := provider.TrojanSub{
+			Base: provider.Base{
+				Proxies: &proxies,
+				Types:   "trojan",
+			},
+		}
+		c.String(200, trojanSub.Provide())
 	})
 	router.GET("/link/:id", func(c *gin.Context) {
 		idx := c.Param("id")
